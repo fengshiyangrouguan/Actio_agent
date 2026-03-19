@@ -1,0 +1,8 @@
+pydantic
+openai
+tenacity
+uvicorn
+fastapi
+toml
+structlog
+tomlkit
