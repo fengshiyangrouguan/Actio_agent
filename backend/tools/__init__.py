@@ -1,4 +1,4 @@
-from backend.tools.save_bot_profile import SaveBotProfileTool
-from backend.tools.extract_bot_profile import ExtractBotProfileTool
+"""Tool package.
 
-__all__ = ["SaveBotProfileTool", "ExtractBotProfileTool"]
+Tools are discovered and registered automatically by ToolManager.load_from_package().
+"""

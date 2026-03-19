@@ -6,21 +6,20 @@ import pkgutil
 from dataclasses import dataclass
 from typing import Any, Dict, Iterable, List, Optional
 
+from backend.common.logger import get_logger
 from backend.mainsystem.base_tool import BaseTool, ToolExecutionContext
 
 from .schemas import ToolDefinition
 
-# 使用 slots 优化内存占用，存储已注册工具的实例
+logger = get_logger("tool_manager")
+
+
 @dataclass(slots=True)
 class RegisteredTool:
-    instance: BaseTool  # 工具的具体实现类实例
+    instance: BaseTool
 
     @property
     def definition(self) -> ToolDefinition:
-        """
-        将工具实例转换为前端或 LLM 规划器所需的元数据定义。
-        包括：名称、描述、参数 JSON Schema 以及适用范围（Scopes）。
-        """
         return ToolDefinition(
             name=self.instance.name,
             description=self.instance.description,
@@ -31,58 +30,72 @@ class RegisteredTool:
 
 class ToolManager:
     """
-    工具管理类：负责动态加载工具、根据当前模式筛选工具并调度执行。
+    工具管理类：负责自动发现、注册、筛选和执行工具。
     """
+
     def __init__(self) -> None:
         self._tools: Dict[str, RegisteredTool] = {}
 
     def register_tool(self, tool: BaseTool) -> None:
-        """手动注册一个工具实例"""
+        """手动注册一个工具实例。"""
+        if tool.name in self._tools:
+            logger.warning(
+                f"Tool '{tool.name}' is already registered. The new definition will override the existing one."
+            )
         self._tools[tool.name] = RegisteredTool(instance=tool)
 
-    def load_from_package(self, package_name: str) -> None:
+    def _discover_modules(self, package_name: str) -> List[str]:
         """
-        动态扫描机制：从指定的 Python 包中自动发现并加载所有 BaseTool 的子类。
+        递归发现包内所有候选模块。
         """
-        # 导入工具所在的包
         package = importlib.import_module(package_name)
         package_path = getattr(package, "__path__", None)
         if package_path is None:
-            return
+            return [package_name]
 
-        # 遍历包下的所有模块
-        for module_info in pkgutil.iter_modules(package_path):
-            # 忽略以 _ 开头的私有模块
-            if module_info.name.startswith("_"):
+        modules = [package_name]
+        for module_info in pkgutil.walk_packages(package_path, prefix=f"{package_name}."):
+            module_basename = module_info.name.rsplit(".", 1)[-1]
+            if module_basename.startswith("_"):
+                continue
+            modules.append(module_info.name)
+        return modules
+
+    def load_from_package(self, package_name: str) -> None:
+        """
+        从指定 Python 包中递归扫描并自动注册所有 BaseTool 子类。
+        """
+        for module_name in self._discover_modules(package_name):
+            try:
+                module = importlib.import_module(module_name)
+            except Exception as exc:
+                logger.error(f"Failed to import tool module '{module_name}': {exc}", exc_info=True)
                 continue
 
-            # 动态导入子模块
-            module = importlib.import_module(f"{package_name}.{module_info.name}")
-            
-            # 检查模块中定义的所有类
             for _, obj in inspect.getmembers(module, inspect.isclass):
-                # 筛选条件：必须是 BaseTool 的子类，且不是 BaseTool 本身
                 if obj is BaseTool or not issubclass(obj, BaseTool):
                     continue
-                # 排除抽象基类（不能实例化的类）
                 if inspect.isabstract(obj):
                     continue
-                
-                # 实例化工具并注册
-                self.register_tool(obj())
+                if obj.__module__ != module.__name__:
+                    continue
+
+                try:
+                    self.register_tool(obj())
+                except Exception as exc:
+                    logger.error(
+                        f"Failed to initialize tool class '{obj.__name__}' from module '{module_name}': {exc}",
+                        exc_info=True,
+                    )
 
     def list_definitions(self, scopes: Optional[Iterable[str]] = None) -> List[ToolDefinition]:
         """
-        获取可用工具的列表。
-        :param scopes: 可选，传入当前模式（如 ['setup'] 或 ['main']）。
-                       如果传入，则只返回支持该作用域的工具。
+        获取可用工具列表；若指定 scopes，则只返回匹配作用域的工具。
         """
-        # 如果未指定作用域，返回全部工具定义
         if scopes is None:
             return [tool.definition for tool in self._tools.values()]
 
         scope_set = set(scopes)
-        # 筛选逻辑：工具的作用域为空（全局可用）或者工具作用域与传入的作用域有交集
         return [
             tool.definition
             for tool in self._tools.values()
@@ -96,21 +109,13 @@ class ToolManager:
         context: ToolExecutionContext,
     ) -> Dict[str, Any]:
         """
-        执行指定的工具。
-        :param name: 工具名称
-        :param parameters: 由 LLM 规划器生成的参数字典
-        :param context: 包含 task_id, session_id 等信息的运行时上下文
-        :return: 工具执行结果（统一封装为字典格式）
+        执行指定工具，并统一返回字典格式结果。
         """
-        # 查找工具
         tool = self._tools.get(name)
         if tool is None:
             raise KeyError(f"未找到名为 '{name}' 的已注册工具。")
-        
-        # 调用工具实例的异步执行方法，并将上下文和解包后的参数传入
+
         result = await tool.instance.execute(context=context, **parameters)
-        
-        # 确保返回结果始终是字典格式，方便后端处理和前端展示
         if isinstance(result, dict):
             return result
         return {"result": result}

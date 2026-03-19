@@ -40,6 +40,29 @@ class MainSystemAgent:
         self.mode: AgentMode = "setup"
         self.bot_profile: Optional[BotProfile] = None
 
+    @staticmethod
+    def _is_send_message_action(tool_name: str) -> bool:
+        return tool_name == "send_message"
+
+    @staticmethod
+    def _extract_send_message_content(result: dict, parameters: dict) -> str:
+        content = result.get("content")
+        if content is None:
+            content = parameters.get("content", "")
+        return str(content).strip()
+
+    @staticmethod
+    def _split_send_message_content(content: str) -> list[str]:
+        return [segment.strip() for segment in content.splitlines() if segment.strip()]
+
+    @staticmethod
+    def _send_message_delay_seconds(message: str) -> float:
+        char_count = len(message.strip())
+        if char_count <= 0:
+            return 0.0
+        time = min(max(char_count * 0.08, 0.35), 2.8) + 3 
+        return time
+
     def _resolve_mode_and_profile(self) -> BotProfile:
         """从配置中动态解析当前机器人身份及模式"""
         try:
@@ -81,7 +104,7 @@ class MainSystemAgent:
 任务指令：
 1. 请根据你的性格，给用户提供一个简洁、自然日常且口语化的任务执行反馈。让用户理解你刚刚完成了什么，平淡一些，尽量简短一些。
 - 不描述动作（例如不要写“我摇了摇头”等）
-- 不要重复你之前说过的话
+- 不要重复你之前说过的话，不要刻意描述出你的人格特性，不用自我介绍
 2. 如果是 final_summary 阶段，请确认任务是否达成，并自然地结束对话。
 3. 严禁输出 JSON，直接输出回复正文。
 4. 保持角色代入感，不要说“我是 AI”之类的话。
@@ -119,7 +142,6 @@ class MainSystemAgent:
             immediate_reply=plan.immediate_reply, plan=plan
         )
         self.store.create_task(task)
-        await self.store.publish(task_id, TaskUpdate(kind="ack", message=plan.immediate_reply))
 
         if not plan.actions:
             # 存入记忆
@@ -137,9 +159,8 @@ class MainSystemAgent:
                 mode=self.mode, bot_profile=bot_profile,
                 status="accepted" 
             )
-
+        await self.store.publish(task_id, TaskUpdate(kind="ack", message=plan.immediate_reply))
         asyncio.create_task(self._run(task_id, plan))
-
         return ChatAcceptedResponse(
             task_id=task_id, session_id=session_id, 
             reply=plan.immediate_reply, mode=self.mode, bot_profile=bot_profile
@@ -152,11 +173,16 @@ class MainSystemAgent:
         2. 结果包装：统一使用 ToolResult (假设 result 存入 metadata)。
         3. 身份刷新：执行保存配置后立即重载 profile。
         """
+        await asyncio.sleep(self._send_message_delay_seconds(plan.immediate_reply))
         task = self.store.get_task(task_id)
         if not task:
             return
 
         tool_outputs = []
+        sent_message = False
+        send_message_done_published = False
+        last_sent_message = ""
+        last_send_message_metadata = {}
         # 获取初始身份
         current_profile = self._resolve_mode_and_profile()
 
@@ -190,6 +216,34 @@ class MainSystemAgent:
                 event_metadata = {"result": result_dict}
                 current_action_summary = {"action": action.tool_name, "result": result_dict}
                 tool_outputs.append(current_action_summary)
+
+                if self._is_send_message_action(action.tool_name):
+                    message_content = self._extract_send_message_content(result_dict, action.parameters)
+                    if message_content:
+                        messages = self._split_send_message_content(message_content)
+                        sent_message = True
+                        last_sent_message = message_content
+                        last_send_message_metadata = event_metadata
+                        self.store.append_memory(task.session_id, "assistant", message_content)
+                        for i, msg in enumerate(messages):
+                            is_last = (i == len(messages) - 1)
+                            is_last_action = (idx == len(plan.actions) - 1)
+                            kind = "done" if (is_last and is_last_action) else "tool"
+                            if kind == "done":
+                                send_message_done_published = True
+                            await self.store.publish(
+                                task_id,
+                                TaskUpdate(
+                                    kind=kind,
+                                    message=msg,
+                                    metadata=event_metadata,
+                                ),
+                            )
+                            if not is_last:
+                                await asyncio.sleep(self._send_message_delay_seconds(msg))
+                        task.final_message = message_content
+                        continue
+
 
                 # 2. 特殊逻辑：如果是保存配置工具，强制刷新系统和缓存
                 if action.tool_name == "save_bot_profile" and result_dict.get("success", result_dict.get("saved", True)):
@@ -225,6 +279,20 @@ class MainSystemAgent:
 
             # --- 4. [动态节点] 全部任务完成后的总结回复 ---
             # 此时的 _generate_thought_response 会使用 self.bot_profile（可能是刚更新过的）
+            if sent_message:
+                task.status = "completed"
+                task.final_message = last_sent_message or task.final_message
+                if not send_message_done_published and last_sent_message:
+                    await self.store.publish(
+                        task_id,
+                        TaskUpdate(
+                            kind="done",
+                            message=last_sent_message,
+                            metadata=last_send_message_metadata,
+                        ),
+                    )
+                return
+
             final_msg = await self._generate_thought_response("final_summary", task, tool_outputs)
             
             # 更新任务最终状态

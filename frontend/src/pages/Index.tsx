@@ -11,6 +11,7 @@ interface Exchange {
   id: string;
   user: string;
   assistant: string;
+  assistantRevision: number;
 }
 
 interface BotProfile {
@@ -65,6 +66,18 @@ const Index = () => {
   } = useSpeechRecognition();
   const { level, startMeter, stopMeter } = useMicLevel();
   const previousAssistantNameRef = useRef<string | null>(null);
+
+  const updateAssistantExchange = useCallback((exchangeId: string, message: string) => {
+    setActiveExchange((prev) =>
+      prev && prev.id === exchangeId
+        ? {
+            ...prev,
+            assistant: message,
+            assistantRevision: prev.assistantRevision + 1,
+          }
+        : prev
+    );
+  }, []);
 
   const clearCallTimers = useCallback(() => {
     if (callStartTimerRef.current !== null) {
@@ -160,7 +173,7 @@ const Index = () => {
       window.clearInterval(timer);
       setIsTypingReply(false);
     };
-  }, [activeExchange?.assistant, activeExchange?.id]);
+  }, [activeExchange?.assistant, activeExchange?.assistantRevision, activeExchange?.id]);
 
   const isAssistantBusy = isProcessing || isTypingReply;
 
@@ -251,6 +264,7 @@ const Index = () => {
       id: exchangeId,
       user: content,
       assistant: "",
+      assistantRevision: 0,
     });
     setTypedAssistantText("");
     setTextInput("");
@@ -282,14 +296,7 @@ const Index = () => {
       localStorage.setItem(SESSION_STORAGE_KEY, data.session_id);
       syncAssistantProfile(data.bot_profile);
 
-      setActiveExchange((prev) =>
-        prev && prev.id === exchangeId
-          ? {
-              ...prev,
-              assistant: data.reply,
-            }
-          : prev
-      );
+      updateAssistantExchange(exchangeId, data.reply);
 
       const eventSource = new EventSource(`/api/chat/${data.task_id}/events`);
       eventSource.onmessage = (event) => {
@@ -304,31 +311,18 @@ const Index = () => {
 
         syncAssistantProfile(payload.metadata?.bot_profile);
 
+        if (payload.kind === "ack" || payload.kind === "plan" || payload.kind === "tool") {
+          updateAssistantExchange(exchangeId, payload.message);
+        }
+
         if (payload.kind === "done") {
-          setActiveExchange((prev) =>
-            prev && prev.id === exchangeId
-              ? {
-                  ...prev,
-                  assistant:
-                    prev.assistant && prev.assistant !== payload.message
-                      ? `${prev.assistant}\n\n${payload.message}`
-                      : payload.message,
-                }
-              : prev
-          );
+          updateAssistantExchange(exchangeId, payload.message);
           eventSource.close();
           setIsProcessing(false);
         }
 
         if (payload.kind === "error") {
-          setActiveExchange((prev) =>
-            prev && prev.id === exchangeId
-              ? {
-                  ...prev,
-                  assistant: payload.message,
-                }
-              : prev
-          );
+          updateAssistantExchange(exchangeId, payload.message);
           eventSource.close();
           setIsProcessing(false);
         }
@@ -349,7 +343,7 @@ const Index = () => {
       );
       setIsProcessing(false);
     }
-  }, [assistantName, isAssistantBusy, syncAssistantProfile]);
+  }, [isAssistantBusy, syncAssistantProfile, updateAssistantExchange]);
 
   const handleMicClick = () => {
     if (isAssistantBusy) return;
@@ -471,14 +465,14 @@ const Index = () => {
 
                     <AnimatePresence>
                       {hasAssistantReply ? (
-                        <motion.div
-                          key={`${activeExchange.id}-assistant`}
-                          className="flex w-full justify-center"
-                          initial={{ opacity: 0, y: 10 }}
-                          animate={{ opacity: 1, y: 0 }}
-                          exit={{ opacity: 0 }}
-                          transition={{ duration: 0.18, ease: "easeOut" }}
-                        >
+                          <motion.div
+                            key={`${activeExchange.id}-assistant-${activeExchange.assistantRevision}`}
+                            className="flex w-full justify-center"
+                            initial={{ opacity: 0, y: 10 }}
+                            animate={{ opacity: 1, y: 0 }}
+                            exit={{ opacity: 0, y: -8, filter: "blur(4px)" }}
+                            transition={{ duration: 0.22, ease: "easeOut" }}
+                          >
                           <p className="terminal-ai-text text-center">
                             {typedAssistantText}
                             {typedAssistantText.length < activeExchange.assistant.length && (

@@ -70,7 +70,7 @@ class PlannerService:
 
 ## 输出要求：
 1. 若需使用工具，请在 actions 列表中规划。你可以选择不调用工具。
-2. immediate_reply 给出简短的人性化回复，如果有action的话，可以告诉用户接下来你要干什么。
+2. immediate_reply 给出简短的人性化回复，如果有action的话，可以告诉用户接下来你要干什么。不要刻意描述出你的人格特性，不用自我介绍
 3. 严格输出 JSON 格式。
 
 {{
