@@ -20,7 +20,7 @@ class SendMessageTool(BaseTool):
     @property
     def description(self) -> str:
         """工具描述"""
-        return "根据你的性格，发送一段文本消息。视情况而定提供一个简洁或详细、自然日常且口语化回复，除了换行符不要输出其他markdown标记"
+        return "根据你的性格，发送一段文本消息。视情况而定提供一个简洁或详细、自然**日常且口语化**的回复，除了换行符不要输出其他markdown标记"
 
     @property
     def parameters_schema(self) -> Dict[str, Any]:

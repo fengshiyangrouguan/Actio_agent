@@ -111,7 +111,7 @@ class MainSystemAgent:
 """.strip()
 
         try:
-            request = self.llm_factory.get_request("planner")
+            request = self.llm_factory.get_request("replyer")
             content, _ = await request.execute(prompt)
             return content.strip()
         except Exception:
@@ -180,6 +180,7 @@ class MainSystemAgent:
 
         tool_outputs = []
         sent_message = False
+        non_send_tool_after_send_message = False
         send_message_done_published = False
         last_sent_message = ""
         last_send_message_metadata = {}
@@ -206,6 +207,8 @@ class MainSystemAgent:
         try:
             # 遍历所有动作，同时获取索引以判断是否为最后一个
             for idx, action in enumerate(plan.actions):
+                if sent_message and not self._is_send_message_action(action.tool_name):
+                    non_send_tool_after_send_message = True
                 # 1. 执行具体工具
                 # 注意：假设你的 tool_manager.execute 返回的是 ToolResult 对象
                 result = await self.tool_manager.execute(action.tool_name, action.parameters, tool_ctx)
@@ -270,7 +273,7 @@ class MainSystemAgent:
                         message=progress_msg, 
                         metadata=event_metadata
                     ))
-
+                    await asyncio.sleep(self._send_message_delay_seconds(progress_msg))
                 # 如果工具明确返回失败，且你希望中断后续流程：
                 if not result_dict.get("success", result_dict.get("saved", True)):
                     # 可以选择在这里 raise Exception 或者 break
@@ -279,7 +282,7 @@ class MainSystemAgent:
 
             # --- 4. [动态节点] 全部任务完成后的总结回复 ---
             # 此时的 _generate_thought_response 会使用 self.bot_profile（可能是刚更新过的）
-            if sent_message:
+            if sent_message and not non_send_tool_after_send_message:
                 task.status = "completed"
                 task.final_message = last_sent_message or task.final_message
                 if not send_message_done_published and last_sent_message:
