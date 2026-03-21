@@ -10,6 +10,7 @@ from backend.common.di.container import container
 from backend.llm_api.factory import LLMRequestFactory
 from backend.common.config.schemas.bot_config import BotConfig
 from backend.common.config.schemas.llm_api_config import LLMApiConfig
+from backend.mainsystem.inference_runner import InferenceRunner
 from backend.mainsystem.base_tool import ToolExecutionContext
 from .schemas import AgentMode, BotProfile, AgentTask, ChatAcceptedResponse, ChatRequest, TaskUpdate, AgentPlan
 from .store import InMemoryTaskStore
@@ -24,11 +25,14 @@ class MainSystemAgent:
         # 基础服务初始化与单例注册
         self.config_service = ConfigService()
         self.llm_factory = LLMRequestFactory()
-        
         llm_api_config = self.config_service.get_config("llm_api")
+        inference_runner = InferenceRunner()
+        
         container.register_instance(LLMRequestFactory, self.llm_factory)
         container.register_instance(ConfigService, self.config_service)
         container.register_instance(LLMApiConfig, llm_api_config)
+        container.register_instance(InferenceRunner, inference_runner)
+
 
         # 工具与规划器加载
         self.tool_manager = ToolManager()
