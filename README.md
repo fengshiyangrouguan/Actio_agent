@@ -116,7 +116,7 @@ cd frontend && npm install && cd ..
 ```
 或直接使用依赖构建脚本
 ```bash
-sudo ./build.sh
+./build.sh
 ```
 
 ### 2. 配置大模型
