@@ -20,7 +20,7 @@ interface BotProfile {
 }
 
 const CALL_START_THRESHOLD = 0.075;
-const CALL_START_HOLD_MS = 140;
+const CALL_START_HOLD_MS = 20;
 const CALL_STOP_THRESHOLD = 0.045;
 const CALL_STOP_SILENCE_MS = 850;
 const TYPEWRITER_SPEED_MS = 28;
@@ -388,7 +388,7 @@ const Index = () => {
             <AiOrb
               size="lg"
               isListening={isListening}
-              isSpeaking={isProcessing}
+              isSpeaking={isTypingReply}
               isTyping={textInput.length > 0}
             />
             <motion.div className="mt-3 text-center" animate={{ opacity: 1 }}>
