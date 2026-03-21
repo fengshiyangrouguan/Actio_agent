@@ -24,5 +24,6 @@ dist-ssr
 *.sw?
 
 **/__pycache__/
-configs/
+configs/bot_config.toml
+configs/llm_api_config.toml
 venv/
