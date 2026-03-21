@@ -34,7 +34,7 @@ class PickUpTool(BaseTool):
         return {
             "type": "object",
             "properties": {
-                "target_id": {"type": "string", "description": "商品唯一ID"},
+                "target_id": {"type": "string", "description": "商品唯一 ID"},
             },
             "required": ["target_id"]
         }
@@ -71,13 +71,13 @@ class PickUpTool(BaseTool):
             
             # 异步等待推理完成
             # run 方法内部会自动添加 .ckpt 后缀
-            # 所以 target_id="cube_001" 会加载 data/model/cube_001.ckpt
             result = await runner.run(target_id)
             
             # 根据推理结果判断抓取状态
+            # TODO： 当前pickup和send_to_cus是合并的，以后可考虑拆分
             if result.get("success"):
                 status = "success"
-                message = f"成功抓取商品 {target_id}"
+                message = f"已成功抓取商品并交给客户 {target_id}"
                 safety_check = "通过"
                 item_grabbed = target_id
             elif result.get("status") == "safety_stop":

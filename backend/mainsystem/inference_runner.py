@@ -26,7 +26,7 @@ class InferenceRunner:
     """
     推理运行器 - 封装所有推理逻辑
     
-    所有配置硬编码，对外只提供简单的异步接口
+    所有配置硬编码，对外只提供简单的异步接口  
     """
     
     # 硬编码配置
@@ -37,14 +37,14 @@ class InferenceRunner:
     
     def __init__(self):
         """初始化推理运行器"""
-        self.stop_event = Event()  # 外部停止信号
-        self.running = Event()     # 内部运行标志
+        self.stop_event = Event()
+        self.running = Event()
         self.running.set()
         
-        # 图像缓存（带锁保护）
-        self.images = {"left": None, "right": None, "top": None}
+        # 图像缓存（4个摄像头：top, left, right, bottom）
+        self.images = {"top": None, "left": None, "right": None, "bottom": None}
         self.image_lock = Lock()
-        self.image_ready = Event()  # 等待图像就绪
+        self.image_ready = Event() # 等待图像就绪
         self._ready_count = 0
         self._ready_lock = Lock()
         
@@ -54,7 +54,12 @@ class InferenceRunner:
         self.current_model_name = None
         
     def _run_camera_thread(self, rs_cam, which_cam: int):
-        """摄像头采集线程（带锁保护）"""
+        """
+        摄像头采集线程
+        
+        Args:
+            which_cam: 0=顶部, 1=左腕, 2=右腕, 3=底部
+        """
         while self.running.is_set():
             try:
                 # 读取图像
@@ -81,11 +86,16 @@ class InferenceRunner:
                     with self.image_lock:
                         self.images["right"] = img
                 
-                # 标记图像已就绪（仅第一次）
+                elif which_cam == 3:  # 底部摄像头
+                    img = img[:, :, ::-1]
+                    with self.image_lock:
+                        self.images["bottom"] = img
+                
+                # 标记图像已就绪（仅第一次）（需要4个摄像头都就绪）
                 with self._ready_lock:
-                    if self._ready_count < 3:
+                    if self._ready_count < 4:
                         self._ready_count += 1
-                        if self._ready_count == 3:
+                        if self._ready_count == 4:
                             self.image_ready.set()
                             
             except Exception as e:
@@ -97,9 +107,10 @@ class InferenceRunner:
         """安全获取当前图像"""
         with self.image_lock:
             return {
+                'top': self.images["top"].copy() if self.images["top"] is not None else None,
                 'left': self.images["left"].copy() if self.images["left"] is not None else None,
                 'right': self.images["right"].copy() if self.images["right"] is not None else None,
-                'top': self.images["top"].copy() if self.images["top"] is not None else None
+                'bottom': self.images["bottom"].copy() if self.images["bottom"] is not None else None
             }
     
     def _move_to_joint_target(self, target_joints: np.ndarray, 
@@ -130,20 +141,19 @@ class InferenceRunner:
         photo_right = np.deg2rad([90, 0, 90, 0, -90, -90, 57])
         if not self._move_to_joint_target(np.concatenate([photo_left, photo_right])):
             return False
-        
         return True
     
     def _check_action_safety(self, action: np.ndarray, last_action: np.ndarray) -> tuple[bool, str]:
         """
         检查动作安全性
-        
+
         Returns:
             (是否安全, 错误信息)
         """
-        # 检查关节增量是否过大（防止突变）
+        # 检查关节增量是否过大
         delta = action - last_action
         if max(delta[0:6]) > 0.17 or max(delta[7:13]) > 0.17:
-            return False, "Joint increment exceeds 10 degrees"
+            return False, "关节增量超过10度"
         
         # 检查关节3和关节4是否在安全位置
         joints_safe = (
@@ -151,7 +161,7 @@ class InferenceRunner:
             and (action[9] < 2.6 and action[9] > 0 and action[10] < 0.6)
         )
         if not joints_safe:
-            return False, "J3 or J4 joints out of safe position"
+            return False, "J3或J4关节超出安全位置"
         
         # 检查工作空间
         try:
@@ -161,10 +171,9 @@ class InferenceRunner:
                 and (pos[6] < 410 and pos[6] > -250 and pos[7] > -700 and pos[7] < -210 and pos[8] > 42)
             )
             if not workspace_safe:
-                return False, "Robot arm out of workspace"
+                return False, "机械臂超出工作空间"
         except Exception:
-            # 如果获取位姿失败，保守处理
-            return False, "Failed to get robot pose"
+            return False, "获取机械臂位姿失败"
         
         return True, ""
     
@@ -173,14 +182,15 @@ class InferenceRunner:
         同步运行推理（内部方法）
         
         Args:
-            target_id: 目标商品ID，自动添加 .ckpt 后缀
+            target_id: 目标商品ID，模型路径为 data/model/{target_id}/
             
         Returns:
             执行结果字典
         """
-        # 构建模型名称（自动添加 .ckpt 后缀）
+        # 构建模型目录路径：data/model/{target_id}/
+        model_dir = os.path.join(self.MODEL_DIR, target_id)
         model_name = f"{target_id}.ckpt"
-        model_path = os.path.join(self.MODEL_DIR, model_name)
+        model_path = os.path.join(model_dir, model_name)
         
         try:
             # ========== 1. 检查模型文件是否存在 ==========
@@ -188,21 +198,27 @@ class InferenceRunner:
                 return {
                     "success": False, 
                     "status": "model_not_found", 
-                    "message": f"Model not found: {model_path}",
+                    "message": f"模型文件不存在: {model_path}",
                     "target_id": target_id
                 }
-            print(f"Model path: {model_path}")
+            print(f"模型路径: {model_path}")
             self.current_model_name = model_name
             
-            # ========== 2. 初始化摄像头 ==========
-            print("Initializing cameras...")
+            # ========== 2. 初始化摄像头（4个：顶、左、右、底） ==========
+            print("正在初始化摄像头...")
             camera_dict = load_ini_data_camera()
             rs_top = RealSenseCamera(flip=True, device_id=camera_dict["top"])
             rs_left = RealSenseCamera(flip=False, device_id=camera_dict["left"])
             rs_right = RealSenseCamera(flip=True, device_id=camera_dict["right"])
+            rs_bottom = RealSenseCamera(flip=True, device_id=camera_dict["bottom"])
             
-            # 启动摄像头线程
-            camera_specs = [(rs_top, 0), (rs_left, 1), (rs_right, 2)]
+            # 启动4个摄像头线程
+            camera_specs = [
+                (rs_top, 0),      # 顶部
+                (rs_left, 1),     # 左腕
+                (rs_right, 2),    # 右腕
+                (rs_bottom, 3),   # 底部
+            ]
             for camera, index in camera_specs:
                 thread = threading.Thread(
                     target=self._run_camera_thread,
@@ -212,74 +228,82 @@ class InferenceRunner:
                 thread.start()
                 self.camera_threads.append(thread)
             
-            # 等待摄像头就绪（最多10秒）
+            # 等待所有4个摄像头就绪（最多10秒）
             if not self.image_ready.wait(timeout=10):
                 return {
                     "success": False, 
                     "status": "camera_timeout", 
-                    "message": "Camera initialization timeout",
+                    "message": "摄像头初始化超时，请检查4个摄像头连接",
                     "target_id": target_id
                 }
-            print("All cameras ready!")
+            print("所有摄像头就绪！(顶部、左腕、右腕、底部)")
             
             # ========== 3. 连接到机器人服务器 ==========
-            print(f"Connecting to robot server at {self.ROBOT_HOST}:{self.ROBOT_PORT}...")
+            print(f"正在连接机器人服务器 {self.ROBOT_HOST}:{self.ROBOT_PORT}...")
             robot_client = ZMQClientRobot(port=self.ROBOT_PORT, host=self.ROBOT_HOST)
             self.env = RobotEnv(robot_client)
             
-            # 初始化数字输出（关闭所有灯）
+            # 初始化数字输出
             self.env.set_do_status([1, 0])  # 红灯关
             self.env.set_do_status([2, 0])  # 绿灯关
             self.env.set_do_status([3, 0])  # 黄灯关
-            print("Robot connected!")
+            print("机器人连接成功！")
             
             # ========== 4. 移动到起始位置 ==========
-            print("Moving to start position...")
+            print("正在移动到起始位置...")
             if not self._move_to_start_pose():
                 return {
                     "success": False, 
                     "status": "move_failed", 
-                    "message": "Failed to move to start pose",
+                    "message": "机械臂移动到起始位置失败",
                     "target_id": target_id
                 }
-            print("Ready at start position")
+            print("已就绪于起始位置")
             
             # ========== 5. 加载模型 ==========
-            print(f"Loading model from: {model_path}")
+            print(f"正在加载模型: {model_path}")
             self.model = Imitate_Model(
-                ckpt_dir=self.MODEL_DIR, 
+                ckpt_dir=model_dir,
                 ckpt_name=model_name
             )
             self.model.loadModel()
-            print("Model loaded!")
+            print("模型加载成功！")
             
             # ========== 6. 准备推理 ==========
             obs = self.env.get_obs()
-            obs["joint_positions"][6] = 1.0   # 左爪初始位置
-            obs["joint_positions"][13] = 1.0  # 右爪初始位置
+            obs["joint_positions"][6] = 1.0
+            obs["joint_positions"][13] = 1.0
             
+            # 注意：模型需要4个摄像头输入
             observation = {
                 "qpos": obs["joint_positions"],
-                "images": {"left_wrist": None, "right_wrist": None, "top": None},
+                "images": {
+                    "left_wrist": None,
+                    "right_wrist": None, 
+                    "top": None,
+                    "bottom": None,    
+                },
             }
             last_action = observation["qpos"].copy()
             first = True
             steps_executed = 0
             
-            print(f"Starting inference for target_id={target_id}...")
+            print(f"开始推理，目标商品: {target_id}...")
             
             # ========== 7. 主推理循环 ==========
             while steps_executed < self.EPISODE_LEN and not self.stop_event.is_set():
-                # 获取当前图像
+                # 获取当前图像（4个摄像头）
                 images = self._get_images()
-                if images["left"] is None or images["right"] is None or images["top"] is None:
+                if (images["top"] is None or images["left"] is None or 
+                    images["right"] is None or images["bottom"] is None):
                     time.sleep(0.01)
                     continue
                 
-                # 更新观测
+                # 更新观测（4个图像）
+                observation["images"]["top"] = images["top"]
                 observation["images"]["left_wrist"] = images["left"]
                 observation["images"]["right_wrist"] = images["right"]
-                observation["images"]["top"] = images["top"]
+                observation["images"]["bottom"] = images["bottom"]
                 
                 # 模型预测
                 action = self.model.predict(observation, steps_executed)
@@ -294,7 +318,6 @@ class InferenceRunner:
                     self.env.set_do_status([3, 0])  # 关闭黄灯
                     self.env.set_do_status([2, 0])  # 关闭绿灯
                     self.env.set_do_status([1, 1])  # 开启红灯
-
                     return {
                         "success": False,
                         "status": "safety_stop",
@@ -317,15 +340,15 @@ class InferenceRunner:
                 last_action = action.copy()
                 steps_executed += 1
                 
-                # 检查是否需要重置计数器（任务循环）
+                # 检查是否需要重置计数器
                 threshold = np.deg2rad(10)
                 reset_pose = np.deg2rad([-90, 0, -90, 0, 90, 90, 57, 90, 0, 90, 0, -90, -90, 57])
                 if steps_executed > 1200 and np.all(np.abs(action - reset_pose) < threshold):
-                    print("Task cycle completed, resetting counter")
+                    print("任务周期完成，重置计数器")
                     steps_executed = 0
             
             # ========== 8. 推理完成 ==========
-            self.env.set_do_status([2, 1])  # 绿灯亮（成功）
+            self.env.set_do_status([2, 1]) # 绿灯
             return {
                 "success": True,
                 "status": "completed" if not self.stop_event.is_set() else "stopped",
@@ -346,13 +369,12 @@ class InferenceRunner:
             }
             
         finally:
-            # 清理资源
-            print("Cleaning up resources...")
+            print("正在清理资源...")
             self.running.clear()
             for thread in self.camera_threads:
                 thread.join(timeout=1)
             cv2.destroyAllWindows()
-            print("Cleanup complete")
+            print("清理完成")
     
     async def run(self, target_id: str) -> Dict[str, Any]:
         """
@@ -363,11 +385,6 @@ class InferenceRunner:
             
         Returns:
             推理结果字典
-            
-        Example:
-            runner = InferenceRunner()
-            result = await runner.run("cube_001")
-            # 实际加载的是 data/model/cube_001.ckpt
         """
         # 重置状态
         self.stop_event.clear()
