@@ -106,13 +106,17 @@ LLM 编排混合 Action:
 ```bash
 # Python 3.10+ 虚拟环境
 python -m venv venv
-source venv/bin/activate  # Windows: venv\Scripts\activate
+source venv/bin/activate
 
 # 安装后端依赖
 pip install -r requirements.txt
 
 # 安装前端依赖
 cd frontend && npm install && cd ..
+```
+或直接使用依赖构建脚本
+```bash
+sudo ./build.sh
 ```
 
 ### 2. 配置大模型
@@ -129,13 +133,116 @@ client_type = "openai"
 
 ### 3. 启动服务
 
+### 方式一：一键启动脚本（推荐 Linux）
+
+Linux 用户可以使用提供的 `start.sh` 脚本一键启动所有服务：
+
+```bash
+# 给脚本添加执行权限
+chmod +x start.sh
+
+# 以 root 权限运行（自动配置串口权限）
+sudo ./start.sh
+```
+
+脚本会自动完成以下操作：
+- ✅ 配置机械臂串口权限
+- ✅ 查找并确认机械臂端口
+- ✅ 启动 launch_nodes 机器人控制节点
+- ✅ 启动 Actio Agent 主程序
+- ✅ 监控服务运行状态
+
+访问 http://127.0.0.1:8080 开始使用。
+
+**启动成功后会显示：**
+```
+============================================================
+[INFO] Actio Agent 启动完成！
+============================================================
+后端服务: http://127.0.0.1:8000
+前端服务: http://127.0.0.1:8080
+============================================================
+按 Ctrl+C 停止所有服务
+```
+
+**手动启动（不使用一键脚本）**
+
+如果不想使用一键脚本，可以分步启动：
+
+```bash
+# 1. 配置串口权限（如需要）
+sudo chmod 666 /dev/ttyUSB*
+
+# 2. 启动机器人控制节点
+python backend/dobot_xtrainer/experiments/launch_nodes.py
+
+# 3. 新开终端，启动 Actio Agent
+python main.py
+
+# 4. 新开终端，启动前端（可选）
+cd frontend && npm run dev
+```
+
+### 方式二：Windows 启动
+
 ```bash
 python main.py
 ```
 
-访问 http://127.0.0.1:8080 开始使用。
+> **注意**：
+> - Linux 用户使用 `start.sh` 可获得完整的自动化体验
+> - `main.py` 针对 Windows 进行了优化，Linux/macOS 用户建议使用 `start.sh` 或手动分步启动
+> - 如不使用机械臂，可跳过 `launch_nodes.py` 启动步骤
 
-> **注意**：`main.py` 针对 Windows 优化，Linux/macOS 用户建议手动启动：`uvicorn backend.mainsystem.api:app --port 8000` 和 `cd frontend && npm run dev`。
+### 验证服务状态
+
+服务启动后，可以通过以下方式验证：
+
+```bash
+# 检查后端 API
+curl http://127.0.0.1:8000/health
+
+# 检查前端服务
+curl http://127.0.0.1:8080
+```
+
+### 常见问题
+
+**Q: 提示串口权限不足怎么办？**
+```bash
+# 临时授权
+sudo chmod 666 /dev/ttyUSB*
+
+# 永久授权（将用户添加到 dialout 组）
+sudo usermod -a -G dialout $USER
+# 需要重新登录生效
+```
+
+**Q: 找不到串口设备？**
+```bash
+# 检查串口是否识别
+ls -la /dev/ttyUSB*
+ls -la /dev/ttyACM*
+
+# 查看串口信息
+dmesg | grep -i tty
+```
+
+**Q: launch_nodes 启动失败？**
+- 确保机械臂已连接并上电
+- 检查串口权限是否正确
+- 查看日志：`tail -f logs/launch_nodes.log`（如果使用 start.sh）
+
+**Q: 端口被占用？**
+```bash
+# 查看端口占用
+sudo lsof -i :8000
+sudo lsof -i :8080
+
+# 杀死占用进程
+kill -9 <PID>
+```
+
 
 ## 扩展新能力
 
