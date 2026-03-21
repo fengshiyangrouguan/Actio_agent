@@ -167,10 +167,7 @@ class MyNewTool(BaseTool):
 
 - [架构设计详解](doc/architecture.md) — 系统模块与数据流说明
 - [机器人部署指南](doc/robot_deployment.md) — 硬件连接、端口配置、偏移校准
-- [数据采集与训练](doc/training.md) — 采集流程、数据集格式、训练参数
 - [API 参考](doc/api_reference.md) — 接口定义与事件格式
-- [常见问题](doc/faq.md) — 问题排查与解决方案
-
 
 ---
 
