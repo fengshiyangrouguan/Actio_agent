@@ -5,9 +5,9 @@ BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 sys.path.append(BASE_DIR)
 from dataclasses import dataclass
 import tyro
-from dobot_control.robots.dobot import DobotRobot
-from dobot_control.robots.robot import BimanualRobot, PrintRobot
-from dobot_control.robots.robot_node import ZMQServerRobot
+from backend.dobot_xtrainer.dobot_control.robots.dobot import DobotRobot
+from backend.dobot_xtrainer.dobot_control.robots.robot import BimanualRobot, PrintRobot
+from backend.dobot_xtrainer.dobot_control.robots.robot_node import ZMQServerRobot
 
 
 @dataclass

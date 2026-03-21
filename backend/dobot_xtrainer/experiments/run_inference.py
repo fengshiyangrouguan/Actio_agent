@@ -11,11 +11,11 @@ import numpy as np
 import tyro
 import threading
 import queue
-from dobot_control.env import RobotEnv
-from dobot_control.robots.robot_node import ZMQClientRobot
-from dobot_control.cameras.realsense_camera import RealSenseCamera
+from backend.dobot_xtrainer.dobot_control.env import RobotEnv
+from backend.dobot_xtrainer.dobot_control.robots.robot_node import ZMQClientRobot
+from backend.dobot_xtrainer.dobot_control.cameras.realsense_camera import RealSenseCamera
 
-from scripts.manipulate_utils import load_ini_data_camera
+from backend.dobot_xtrainer.scripts.manipulate_utils import load_ini_data_camera
 
 from ModelTrain.module.model_module import Imitate_Model
 

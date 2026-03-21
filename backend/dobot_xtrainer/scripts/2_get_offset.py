@@ -1,9 +1,9 @@
 from pathlib import Path
 import numpy as np
-from dobot_control.dynamixel.driver import DynamixelDriver
+from backend.dobot_xtrainer.dobot_control.dynamixel.driver import DynamixelDriver
 MENAGERIE_ROOT: Path = Path(__file__).parent / "third_party" / "mujoco_menagerie"
-from scripts.manipulate_utils import load_ini_data_hands
-from scripts.function_util import scan_port
+from backend.dobot_xtrainer.scripts.manipulate_utils import load_ini_data_hands
+from backend.dobot_xtrainer.scripts.function_util import scan_port
 
 
 def get_config(which_hand, which_hand_config):

@@ -4,8 +4,8 @@ from typing import Dict, Optional, Sequence, Tuple
 
 import numpy as np
 
-from dobot_control.agents.agent import Agent
-from dobot_control.robots.dynamixel import DynamixelRobot
+from backend.dobot_xtrainer.dobot_control.agents.agent import Agent
+from backend.dobot_xtrainer.dobot_control.robots.dynamixel import DynamixelRobot
 import time
 import configparser
 import os

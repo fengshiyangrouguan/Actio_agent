@@ -1,7 +1,7 @@
 import numpy as np
 import pytest
 
-from dobot_control.dynamixel.driver import FakeDynamixelDriver
+from backend.dobot_xtrainer.dobot_control.dynamixel.driver import FakeDynamixelDriver
 
 
 @pytest.fixture

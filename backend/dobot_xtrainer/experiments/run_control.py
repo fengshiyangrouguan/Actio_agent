@@ -8,14 +8,14 @@ from dataclasses import dataclass
 import numpy as np
 import tyro
 import threading
-from dobot_control.agents.agent import BimanualAgent
-from scripts.format_obs import save_frame
-from dobot_control.env import RobotEnv
-from dobot_control.robots.robot_node import ZMQClientRobot
-from scripts.function_util import mismatch_data_write, wait_period, log_write, mk_dir
-from scripts.manipulate_utils import robot_pose_init, pose_check, dynamic_approach, obs_action_check, servo_action_check, load_ini_data_hands, set_light, load_ini_data_camera
-from dobot_control.agents.dobot_agent import DobotAgent
-from dobot_control.cameras.realsense_camera import RealSenseCamera
+from backend.dobot_xtrainer.dobot_control.agents.agent import BimanualAgent
+from backend.dobot_xtrainer.scripts.format_obs import save_frame
+from backend.dobot_xtrainer.dobot_control.env import RobotEnv
+from backend.dobot_xtrainer.dobot_control.robots.robot_node import ZMQClientRobot
+from backend.dobot_xtrainer.scripts.function_util import mismatch_data_write, wait_period, log_write, mk_dir
+from backend.dobot_xtrainer.scripts.manipulate_utils import robot_pose_init, pose_check, dynamic_approach, obs_action_check, servo_action_check, load_ini_data_hands, set_light, load_ini_data_camera
+from backend.dobot_xtrainer.dobot_control.agents.dobot_agent import DobotAgent
+from backend.dobot_xtrainer.dobot_control.cameras.realsense_camera import RealSenseCamera
 import datetime
 from pathlib import Path
 import requests

@@ -1,7 +1,7 @@
 import os
 import glob
 import numpy as np
-from scripts.function_util import mk_dir
+from backend.dobot_xtrainer.scripts.function_util import mk_dir
 from pathlib import Path
 import tyro
 from dataclasses import dataclass

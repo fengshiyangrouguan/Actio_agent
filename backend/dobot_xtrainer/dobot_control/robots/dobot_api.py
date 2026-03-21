@@ -5,7 +5,7 @@ import datetime
 import numpy as np
 import os
 import json
-from scripts.function_util import log_write
+from backend.dobot_xtrainer.scripts.function_util import log_write
 
 alarmControllerFile = "files/alarm_controller.json"
 alarmServoFile = "files/alarm_servo.json"

@@ -1,5 +1,5 @@
-from scripts.manipulate_utils import load_ini_data_camera
-from dobot_control.cameras.realsense_camera import RealSenseCamera, get_device_ids
+from backend.dobot_xtrainer.scripts.manipulate_utils import load_ini_data_camera
+from backend.dobot_xtrainer.dobot_control.cameras.realsense_camera import RealSenseCamera, get_device_ids
 import numpy as np
 import cv2
 

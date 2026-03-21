@@ -1,7 +1,7 @@
 import time
 from typing import List, Optional, Tuple
 import numpy as np
-from dobot_control.cameras.camera import CameraDriver
+from backend.dobot_xtrainer.dobot_control.cameras.camera import CameraDriver
 import cv2
 import pyrealsense2 as rs
 

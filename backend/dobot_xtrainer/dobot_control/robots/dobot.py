@@ -1,11 +1,11 @@
 from typing import Dict
 import numpy as np
 import time
-from dobot_control.robots.robot import Robot
+from backend.dobot_xtrainer.dobot_control.robots.robot import Robot
 import struct
 import sys
-from scripts.manipulate_utils import load_ini_data_hands, load_ini_data_gripper
-from scripts.manipulate_utils import robot_pose_init, pose_check, dynamic_approach, obs_action_check, \
+from backend.dobot_xtrainer.scripts.manipulate_utils import load_ini_data_hands, load_ini_data_gripper
+from backend.dobot_xtrainer.scripts.manipulate_utils import robot_pose_init, pose_check, dynamic_approach, obs_action_check, \
     servo_action_check, load_ini_data_hands, set_light, load_ini_data_camera
 from threading import Event, Lock, Thread
 
@@ -14,7 +14,7 @@ class DobotRobot(Robot):
     """A class representing a UR robot."""
 
     def __init__(self, robot_ip: str = "192.168.5.1", no_gripper: bool = False, robot_number: int = 1):
-        from dobot_control.robots import dobot_api
+        from backend.dobot_xtrainer.dobot_control.robots import dobot_api
         self.robot_number = robot_number
         self.frequency_ = 1 / 0.015
         # Set delta time to be used by receiveCallback
@@ -42,7 +42,7 @@ class DobotRobot(Robot):
         self.gripper_id_name = gripper_dict[self.com_list[robot_ip]].id_name
 
         if not no_gripper:
-            from dobot_control.gripper.dobot_gripper import DobotGripper
+            from backend.dobot_xtrainer.dobot_control.gripper.dobot_gripper import DobotGripper
             self.gripper = DobotGripper(port=gripper_dict[self.com_list[robot_ip]].port,
                                         id_name=self.gripper_id_name,
                                         servo_pos=self.gripper_list)

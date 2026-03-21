@@ -14,7 +14,7 @@ from .schemas import ToolDefinition
 logger = get_logger("tool_manager")
 
 
-@dataclass(slots=True)
+@dataclass
 class RegisteredTool:
     instance: BaseTool
 

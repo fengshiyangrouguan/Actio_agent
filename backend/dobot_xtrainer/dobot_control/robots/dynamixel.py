@@ -3,8 +3,8 @@ from typing import Dict, Optional, Sequence, Tuple
 
 import numpy as np
 
-from dobot_control.robots.robot import Robot
-from scripts.function_util import log_write
+from backend.dobot_xtrainer.dobot_control.robots.robot import Robot
+from backend.dobot_xtrainer.scripts.function_util import log_write
 
 class DynamixelRobot():
     """A class representing a UR robot."""
@@ -22,7 +22,7 @@ class DynamixelRobot():
         gripper_config: Optional[Tuple[int, float, float]] = None,
         start_joints: Optional[np.ndarray] = None,
     ):
-        from dobot_control.dynamixel.driver import (
+        from backend.dobot_xtrainer.dobot_control.dynamixel.driver import (
             DynamixelDriver,
             DynamixelDriverProtocol,
             FakeDynamixelDriver,

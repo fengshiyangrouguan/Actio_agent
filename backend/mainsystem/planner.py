@@ -46,6 +46,7 @@ class PlannerService:
         except Exception as e:
             # 兜底逻辑
             logger.error(f"LLM解析时发生错误:{e}")
+            print(f"LLM解析时发生错误:{e}")
             return AgentPlan(
                 immediate_reply="收到，我先按当前信息继续处理。",
                 execution_goal=user_input,

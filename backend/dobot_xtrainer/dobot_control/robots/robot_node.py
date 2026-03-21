@@ -5,8 +5,8 @@ from typing import Any, Dict
 import numpy as np
 import zmq
 import time
-from dobot_control.robots.robot import Robot
-from scripts.function_util import log_write
+from backend.dobot_xtrainer.dobot_control.robots.robot import Robot
+from backend.dobot_xtrainer.scripts.function_util import log_write
 
 DEFAULT_ROBOT_PORT = 6000
 

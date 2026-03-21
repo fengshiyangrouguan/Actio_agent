@@ -1,4 +1,4 @@
-from typing import Any
+from typing import Any, Optional, Union
 
 
 # 常见Error Code Mapping (以OpenAI API为例)
@@ -28,7 +28,7 @@ class NetworkConnectionError(Exception):
 class ReqAbortException(Exception):
     """请求异常退出，常见于请求被中断或取消"""
 
-    def __init__(self, message: str | None = None):
+    def __init__(self, message: Optional[str] = None):
         super().__init__(message)
         self.message = message
 
@@ -39,7 +39,7 @@ class ReqAbortException(Exception):
 class RespNotOkException(Exception):
     """请求响应异常，见于请求未能成功响应（非 '200 OK'）"""
 
-    def __init__(self, status_code: int, message: str | None = None):
+    def __init__(self, status_code: int, message: Optional[str] = None):
         super().__init__(message)
         self.status_code = status_code
         self.message = message
@@ -56,7 +56,7 @@ class RespNotOkException(Exception):
 class RespParseException(Exception):
     """响应解析错误，常见于响应格式不正确或解析方法不匹配"""
 
-    def __init__(self, ext_info: Any, message: str | None = None):
+    def __init__(self, ext_info: Any, message: Optional[str] = None):
         super().__init__(message)
         self.ext_info = ext_info
         self.message = message
@@ -77,9 +77,9 @@ class EmptyResponseException(Exception):
 
 
 class ModelAttemptFailed(Exception):
-    """当在单个模型上的所有重试都失败后，由“执行者”函数抛出，以通知“调度器”切换模型。"""
+    """当在单个模型上的所有重试都失败后，由"执行者"函数抛出，以通知"调度器"切换模型。"""
 
-    def __init__(self, message: str, original_exception: Exception | None = None):
+    def __init__(self, message: str, original_exception: Optional[Exception] = None):
         super().__init__(message)
         self.message = message
         self.original_exception = original_exception

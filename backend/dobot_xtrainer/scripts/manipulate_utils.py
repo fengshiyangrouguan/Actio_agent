@@ -1,12 +1,12 @@
 import numpy as np
 import time
 import configparser
-from dobot_control.agents.dobot_agent import DobotRobotConfig
+from backend.dobot_xtrainer.dobot_control.agents.dobot_agent import DobotRobotConfig
 import os
 from pathlib import Path
 from dataclasses import dataclass
 
-from scripts.function_util import wait_period, log_write
+from backend.dobot_xtrainer.scripts.function_util import wait_period, log_write
 
 
 def set_light(env, which_color, which_status):

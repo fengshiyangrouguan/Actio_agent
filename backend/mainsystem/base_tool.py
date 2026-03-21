@@ -5,7 +5,7 @@ from dataclasses import dataclass, field
 from typing import Any, Dict, List
 
 
-@dataclass(slots=True)
+@dataclass
 class ToolExecutionContext:
     task_id: str
     session_id: str

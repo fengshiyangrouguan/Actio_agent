@@ -1,8 +1,8 @@
-from scripts.function_util import log_write, scan_port, free_limit_and_set_one
-from dobot_control.dynamixel.driver import DynamixelDriver
+from backend.dobot_xtrainer.scripts.function_util import log_write, scan_port, free_limit_and_set_one
+from backend.dobot_xtrainer.dobot_control.dynamixel.driver import DynamixelDriver
 from pathlib import Path
-from scripts.manipulate_utils import load_ini_data_hands, load_ini_data_gripper
-from dobot_control.gripper.dobot_gripper import DobotGripper
+from backend.dobot_xtrainer.scripts.manipulate_utils import load_ini_data_hands, load_ini_data_gripper
+from backend.dobot_xtrainer.dobot_control.gripper.dobot_gripper import DobotGripper
 
 
 if __name__ == "__main__":

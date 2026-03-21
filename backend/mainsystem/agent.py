@@ -10,13 +10,13 @@ from backend.common.di.container import container
 from backend.llm_api.factory import LLMRequestFactory
 from backend.common.config.schemas.bot_config import BotConfig
 from backend.common.config.schemas.llm_api_config import LLMApiConfig
-from backend.mainsystem.inference_runner import InferenceRunner
 from backend.mainsystem.base_tool import ToolExecutionContext
 from .schemas import AgentMode, BotProfile, AgentTask, ChatAcceptedResponse, ChatRequest, TaskUpdate, AgentPlan
 from .store import InMemoryTaskStore
 from .planner import PlannerService
 from .tool_manager import ToolManager
 from backend.common.logger import get_logger
+from backend.dobot_xtrainer.dobot_control.robots.dobot import DobotRobot
 logger = get_logger("agent")
 
 class MainSystemAgent:
@@ -26,12 +26,15 @@ class MainSystemAgent:
         self.config_service = ConfigService()
         self.llm_factory = LLMRequestFactory()
         llm_api_config = self.config_service.get_config("llm_api")
-        inference_runner = InferenceRunner()
+
+        
+        robot_ip = "192.168.5.1"
+        robot = DobotRobot(robot_ip=robot_ip, no_gripper=False)  # 假设使用夹爪
         
         container.register_instance(LLMRequestFactory, self.llm_factory)
         container.register_instance(ConfigService, self.config_service)
         container.register_instance(LLMApiConfig, llm_api_config)
-        container.register_instance(InferenceRunner, inference_runner)
+        container.register_instance(DobotRobot, robot)
 
 
         # 工具与规划器加载

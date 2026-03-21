@@ -8,7 +8,7 @@ import os, sys
 
 BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 import serial.tools.list_ports as serial_stl
-from scripts.function_util import save_videos, mk_dir, free_limit_and_set_one
+from backend.dobot_xtrainer.scripts.function_util import save_videos, mk_dir, free_limit_and_set_one
 
 BASE_DIR += "/../"
 # 将根目录添加到path中
@@ -16,7 +16,7 @@ import time
 
 sys.path.append(BASE_DIR)
 
-from third_party.feetech.scservo_sdk import *
+from backend.dobot_xtrainer.third_party.feetech.scservo_sdk import *
 
 
 def deal_hex_send_data(send_data):

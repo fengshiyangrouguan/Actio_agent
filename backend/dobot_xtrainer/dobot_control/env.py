@@ -3,8 +3,8 @@ from typing import Any, Dict, Optional
 
 import numpy as np
 
-from dobot_control.cameras.camera import CameraDriver
-from dobot_control.robots.robot import Robot
+from backend.dobot_xtrainer.dobot_control.cameras.camera import CameraDriver
+from backend.dobot_xtrainer.dobot_control.robots.robot import Robot
 
 
 class Rate:
