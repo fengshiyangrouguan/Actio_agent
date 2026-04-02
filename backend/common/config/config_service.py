@@ -1,6 +1,7 @@
 import shutil
 from pathlib import Path
-from typing import Dict, Optional, Type, TypeVar
+
+from typing import Dict, Optional, Type, TypeVar, Tuple
 
 import toml
 from pydantic import BaseModel, ValidationError
@@ -21,7 +22,7 @@ class ConfigService:
 
     _instance = None
     _cache: Dict[str, BaseModel] = {}
-    _config_registry: Dict[str, tuple[str, Type[BaseModel]]] = {
+    _config_registry: Dict[str, Tuple[str, Type[BaseModel]]] = {
         "llm_api": ("configs/llm_api_config.toml", LLMApiConfig),
         "bot": ("configs/bot_config.toml", BotConfig),
     }

@@ -22,6 +22,7 @@ from backend.dobot_xtrainer.scripts.manipulate_utils import load_ini_data_camera
 from backend.dobot_xtrainer.ModelTrain.module.model_module import Imitate_Model
 
 
+
 class InferenceRunner:
     """
     推理运行器 - 封装所有推理逻辑

@@ -10,6 +10,7 @@ import subprocess
 import sys
 import time
 from pathlib import Path
+from typing import List
 
 # 动态导入，避免全局依赖
 ROOT_DIR = Path(__file__).resolve().parent
@@ -59,8 +60,8 @@ def start_backend() -> subprocess.Popen:
         ],
         cwd=ROOT_DIR,
         stdin=subprocess.DEVNULL,
-        stdout=subprocess.DEVNULL,  # 丢弃输出，避免管道阻塞
-        stderr=subprocess.STDOUT,   # 合并错误输出
+        stdout=subprocess.PIPE, 
+        stderr=subprocess.PIPE,   # 合并错误输出
         start_new_session=True,     # 创建新会话组
     )
 
@@ -91,13 +92,13 @@ def start_frontend() -> subprocess.Popen:
         ],
         cwd=FRONTEND_DIR,
         stdin=subprocess.DEVNULL,
-        stdout=subprocess.DEVNULL,  # 丢弃输出
-        stderr=subprocess.STDOUT,    # 合并错误输出
+        stdout=subprocess.PIPE,
+        stderr=subprocess.PIPE,   # 合并错误输出
         start_new_session=True,      # 创建新会话组
     )
 
 
-def terminate_processes(processes: list[subprocess.Popen]) -> None:
+def terminate_processes(processes: List[subprocess.Popen]) -> None:
     """终止所有子进程（Linux/macOS版本）"""
     for process in processes:
         if process and process.poll() is None:  # 进程还在运行
@@ -205,7 +206,7 @@ def main() -> int:
     print(f"当前Python: {sys.executable}")
     print()
     
-    processes: list[subprocess.Popen] = []
+    processes: List[subprocess.Popen] = []
     
     try:
         # 检查端口

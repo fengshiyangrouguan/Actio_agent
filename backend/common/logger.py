@@ -8,7 +8,7 @@ import structlog
 import tomlkit
 
 from pathlib import Path
-from typing import Callable, Optional
+from typing import Callable, Optional,Dict
 from datetime import datetime, timedelta
 
 # 创建logs目录
@@ -767,7 +767,7 @@ _immediate_setup()
 
 raw_logger: structlog.stdlib.BoundLogger = structlog.get_logger()
 
-binds: dict[str, Callable] = {}
+binds: Dict[str, Callable] = {}
 
 
 def get_logger(name: Optional[str]) -> structlog.stdlib.BoundLogger:

@@ -291,3 +291,7 @@ class MyNewTool(BaseTool):
 - [架构设计详解](doc/architecture.md) — 系统模块与数据流说明
 - [机器人部署指南](doc/robot_deployment.md) — 硬件连接、端口配置、标定
 - [API 参考](doc/api_reference.md) — 接口定义与事件格式
+
+---
+
+> **Actio Agent** — 让智能体走出终端。

@@ -6,7 +6,7 @@ print(BASE_DIR)
 sys.path.append(BASE_DIR)
 sys.path.append(BASE_DIR+'/ModelTrain')
 sys.path.append(BASE_DIR+'/ModelTrain/detr')
-sys.path.append(BASE_DIR+'/robomimic-r2d2')
+sys.path.append(BASE_DIR+'/robomimic_r2d2')
 
 from module.train_module import train
 

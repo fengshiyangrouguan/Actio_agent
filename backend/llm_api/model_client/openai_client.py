@@ -1,5 +1,5 @@
 # backend/llm_api/model_client/openai_client.py
-from typing import Tuple
+from typing import Tuple,List
 
 from openai import AsyncOpenAI, APIConnectionError, APIStatusError, RateLimitError
 from tenacity import retry, stop_after_attempt, wait_random_exponential, retry_if_exception_type
@@ -137,7 +137,7 @@ class OpenAIClient(BaseClient):
             raise e
 
 
-    async def _internal_get_embedding(self, model_config: ModelConfig, embedding_input: str, **kwargs) -> list[float]:
+    async def _internal_get_embedding(self, model_config: ModelConfig, embedding_input: str, **kwargs) -> List[float]:
         """
         实际执行向量化请求的内部方法。
         """
