@@ -104,6 +104,23 @@ LLM 编排混合 Action:
 ### 1. 环境准备
 
 ```bash
+# 安装 nvm
+curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.7/install.sh | bash
+
+# 重启终端或刷新配置
+source ~/.bashrc
+
+# 安装 Node.js LTS 版本（React 18+ 要求 Node >= 14）
+nvm install --lts
+nvm use --lts
+
+# 验证
+node -v  # 应显示 v20.x 或 v22.x
+npm -v
+
+# 安装 pnpm （可选，速度更快）
+npm install -g pnpm
+
 # Python 3.10+ 虚拟环境
 python -m venv venv
 source venv/bin/activate
@@ -111,8 +128,10 @@ source venv/bin/activate
 # 安装后端依赖
 pip install -r requirements.txt
 
-# 安装前端依赖
+# 安装前端依赖（和pnpm二选一）
 cd frontend && npm install && cd ..
+# 如果有 pnpm 可使用下面的命令安装依赖
+cd frontend && pnpm install && cd ..
 ```
 或直接使用依赖构建脚本
 ```bash
@@ -178,9 +197,6 @@ python backend/dobot_xtrainer/experiments/launch_nodes.py
 
 # 3. 新开终端，启动 Actio Agent
 python main.py
-
-# 4. 新开终端，启动前端（可选）
-cd frontend && npm run dev
 ```
 
 ### 方式二：Windows 启动
@@ -273,9 +289,5 @@ class MyNewTool(BaseTool):
 详细文档请参阅 `doc/` 目录：
 
 - [架构设计详解](doc/architecture.md) — 系统模块与数据流说明
-- [机器人部署指南](doc/robot_deployment.md) — 硬件连接、端口配置、偏移校准
+- [机器人部署指南](doc/robot_deployment.md) — 硬件连接、端口配置、标定
 - [API 参考](doc/api_reference.md) — 接口定义与事件格式
-
----
-
-> **Actio Agent** — 让智能体走出终端。

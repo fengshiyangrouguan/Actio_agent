@@ -55,7 +55,7 @@ def start_backend() -> subprocess.Popen:
             "--port",
             "8000",
             "--log-level",
-            "warning",  # 减少日志输出
+            "info",  # 减少日志输出
         ],
         cwd=ROOT_DIR,
         stdin=subprocess.DEVNULL,

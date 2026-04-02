@@ -16,27 +16,24 @@ from .store import InMemoryTaskStore
 from .planner import PlannerService
 from .tool_manager import ToolManager
 from backend.common.logger import get_logger
-from backend.dobot_xtrainer.dobot_control.robots.dobot import DobotRobot
+from backend.mainsystem.inference_runner import InferenceRunner
 logger = get_logger("agent")
 
 class MainSystemAgent:
     def __init__(self, store: InMemoryTaskStore) -> None:
+        logger.info("正在启动 Agent...")
         self.store = store
         # 基础服务初始化与单例注册
         self.config_service = ConfigService()
         self.llm_factory = LLMRequestFactory()
         llm_api_config = self.config_service.get_config("llm_api")
-
-        
-        robot_ip = "192.168.5.1"
-        robot = DobotRobot(robot_ip=robot_ip, no_gripper=False)  # 假设使用夹爪
+        inference_runner = InferenceRunner()
         
         container.register_instance(LLMRequestFactory, self.llm_factory)
         container.register_instance(ConfigService, self.config_service)
         container.register_instance(LLMApiConfig, llm_api_config)
-        container.register_instance(DobotRobot, robot)
-
-
+        container.register_instance(InferenceRunner, inference_runner)
+        
         # 工具与规划器加载
         self.tool_manager = ToolManager()
         self.tool_manager.load_from_package("backend.tools")

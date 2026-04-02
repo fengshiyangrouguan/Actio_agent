@@ -7,6 +7,7 @@ toml
 structlog
 tomlkit
 
+
 # keep in alphabetical order
 dm_control
 Pillow
@@ -31,6 +32,12 @@ h5py
 ipython
 tyro==0.8.8
 huggingface_hub==0.25.2
-click
 serial
 pyserial
+click
+torch
+torchvision
+imageio
+diffusers
+numpy
+

@@ -15,41 +15,7 @@ from backend.common.config.config_service import ConfigService
 from backend.common.di.container import container
 from backend.mainsystem.base_tool import BaseTool, ToolExecutionContext
 from backend.dobot_xtrainer.dobot_control.robots.dobot import DobotRobot
-import time
-import sys
-import cv2
-import threading
-from backedn.dobot_xtrainer.dobot_control.cameras.realsense_camera import RealSenseCamera
-from backedn.dobot_xtrainer.scripts.manipulate_utils import load_ini_data_camera
-
-
 logger = logging.getLogger(__name__)
-# 摄像头图像全局变量
-image_left, image_right, image_top, image_bottom, thread_run = None, None, None, None, None
-
-def run_thread_cam(rs_cam, which_cam):
-    """摄像头线程函数，持续读取相机图像"""
-    global image_left, image_right, image_top, image_bottom, thread_run
-    
-    if which_cam == 1:  # 左侧相机
-        while thread_run:
-            image_left, _ = rs_cam.read()
-            image_left = image_left[:, :, ::-1]  # RGB转换为BGR
-    elif which_cam == 2:  # 右侧相机
-        while thread_run:
-            image_right, _ = rs_cam.read()
-            image_right = image_right[:, :, ::-1]  # RGB转换为BGR
-    elif which_cam == 0:  # 顶部相机
-        while thread_run:
-            image_top_src, _ = rs_cam.read()
-            image_top_src = image_top_src[150:420, 220:480, ::-1]  
-            image_top = cv2.resize(image_top_src, (640, 480))
-    elif which_cam == 3:  # 底部相机
-        while thread_run:
-            image_bottom, _ = rs_cam.read()
-            image_bottom = image_bottom[:, :, ::-1]  # RGB转换为BGR
-    else:
-        print("Camera index error!")
 
 
 class PickUpTool(BaseTool):
@@ -319,7 +285,7 @@ class PickUpTool(BaseTool):
                 "steps_executed": steps_executed,
                 "model_name": "dobot_trajectory_replay",
                 "model_path": str(observation_dir) 
-            
+            }
         except Exception as e:
             logger.exception(f"轨迹复现过程中发生异常: {e}")
             return {
